@@ -1,0 +1,476 @@
+```text
+Add a complete "Fix → Review → Verify → Complete" workflow to the existing Merchant Voice SaaS application.
+
+IMPORTANT:
+Do not redesign or rebuild the entire application. Extend the existing product and preserve the current UX, architecture, database, and functionality unless changes are required for this workflow.
+
+CORE PRINCIPLE:
+
+An internal team marking an issue as fixed must NOT automatically make the issue "Completed".
+
+The correct lifecycle is:
+
+Detected
+→ Assigned
+→ Acknowledged
+→ Investigating
+→ Fix Submitted
+→ Ready for Review
+→ Reviewed
+→ Completed
+
+A reviewer must verify the fix before the issue can become Completed.
+
+==================================================
+1. INTERNAL TEAM: SUBMIT FIX
+==================================================
+
+When the assigned internal team finishes their work, replace the simple "Resolve" action with:
+
+[Submit Fix for Review]
+
+When clicked, open a compact form:
+
+Fix summary
+Required
+
+"What was changed?"
+
+Resolution details
+Optional
+
+"What did the team do to address the issue?"
+
+Evidence
+Optional
+
+Allow:
+- text
+- deployment/reference ID
+- relevant notes
+- attachment/link if supported by the existing architecture
+
+Primary button:
+
+[Submit for Review]
+
+After submission:
+
+Status becomes:
+
+READY FOR REVIEW
+
+Do NOT mark it Completed automatically.
+
+==================================================
+2. REVIEW REQUEST
+==================================================
+
+After the team submits a fix, show:
+
+✓ Fix submitted for review
+
+Issue:
+OTP Delivery Failure
+
+Submitted by:
+Authentication Team
+
+Submitted:
+2:42 PM
+
+Fix summary:
+"Updated OTP delivery configuration."
+
+Evidence:
+Deployment #1842
+
+Primary action:
+
+[Review Fix]
+
+==================================================
+3. REVIEW SCREEN
+==================================================
+
+Create a dedicated review panel/page.
+
+Show the complete context:
+
+ISSUE
+
+OTP Delivery Failure
+
+Original problem:
+23 users reported not receiving OTPs.
+
+Impact:
+23 users affected
+
+Trend:
+↑31%
+
+Team:
+Authentication
+
+Then:
+
+FIX SUBMITTED
+
+What changed:
+"Updated OTP delivery configuration."
+
+Evidence:
+Deployment #1842
+
+Then:
+
+VERIFICATION CHECKLIST
+
+✓ Fix deployed
+✓ Test OTP delivered
+✓ Error rate decreased
+
+Allow the reviewer to verify each item.
+
+Do not automatically check these boxes unless actual evidence exists.
+
+Clearly distinguish:
+
+Database facts
+Team-submitted information
+AI-generated interpretation
+
+==================================================
+4. REVIEW ACTIONS
+==================================================
+
+Provide two primary outcomes:
+
+[Accept & Complete]
+
+[Request Changes]
+
+Accept & Complete:
+
+The issue becomes:
+
+COMPLETED
+
+Request Changes:
+
+The issue becomes:
+
+INVESTIGATION REQUIRED
+
+or returns to:
+
+INVESTIGATING
+
+depending on the existing state model.
+
+The reviewer must provide a reason when requesting changes.
+
+Suggested reasons:
+
+Issue still occurring
+Evidence insufficient
+Fix incomplete
+Regression detected
+Other
+
+Allow custom explanation.
+
+Example:
+
+"OTP issue still occurs for some users. Please investigate failed deliveries for international numbers."
+
+==================================================
+5. COMPLETION STATE
+==================================================
+
+After approval:
+
+Show:
+
+✓ Completed
+
+OTP Delivery Failure
+
+Verified by:
+Product Operations Lead
+
+Completed:
+2:56 PM
+
+Resolution:
+OTP delivery configuration updated.
+
+The issue timeline should show:
+
+2:10 PM
+Issue detected
+
+2:11 PM
+Assigned to Authentication Team
+
+2:11 PM
+Team notified
+
+2:18 PM
+Acknowledged
+
+2:25 PM
+Investigation started
+
+2:42 PM
+Fix submitted
+
+2:50 PM
+Review requested
+
+2:56 PM
+Fix accepted
+
+2:56 PM
+Issue completed
+
+==================================================
+6. DASHBOARD CHANGES
+==================================================
+
+Update the main dashboard to clearly separate:
+
+NEEDS ATTENTION
+
+READY FOR REVIEW
+
+ACTIVE INVESTIGATIONS
+
+COMPLETED
+
+Example:
+
+READY FOR REVIEW
+
+✓ OTP Delivery Failure
+Authentication Team
+Fix submitted 8 min ago
+
+[Review Fix]
+
+This should become a high-priority dashboard item for the reviewer.
+
+Do NOT mix completed issues with active issues.
+
+==================================================
+7. ISSUE DETAIL PAGE
+==================================================
+
+Update the issue detail page to show a clear lifecycle:
+
+Detected
+✓
+
+Assigned
+✓
+
+Acknowledged
+✓
+
+Investigating
+✓
+
+Fix Submitted
+✓
+
+Ready for Review
+●
+
+Completed
+○
+
+Use the existing design system.
+
+Make the current state visually obvious.
+
+==================================================
+8. NOTIFICATIONS
+==================================================
+
+When a team submits a fix:
+
+Notify the appropriate reviewer.
+
+Example:
+
+"OTP Delivery Failure is ready for review."
+
+23 users affected
+Fix submitted by Authentication Team
+
+[Review Fix]
+
+When a reviewer accepts:
+
+Notify the assigned team:
+
+"Your fix for OTP Delivery Failure has been verified and the issue is now completed."
+
+When a reviewer requests changes:
+
+Notify the team:
+
+"Your fix for OTP Delivery Failure requires further investigation."
+
+Include the reviewer's reason.
+
+Do not claim an email was successfully sent unless an actual email provider is configured.
+
+==================================================
+9. DATABASE
+==================================================
+
+Extend the existing issue/action model.
+
+Add a fix submission entity if appropriate:
+
+fix_submissions
+
+Fields:
+
+id
+issue_id
+submitted_by
+summary
+resolution_details
+evidence
+status
+submitted_at
+reviewed_at
+reviewed_by
+review_reason
+
+Add issue review states:
+
+READY_FOR_REVIEW
+COMPLETED
+CHANGES_REQUESTED
+
+If the existing architecture already has a suitable table, extend it instead of unnecessarily creating duplicate structures.
+
+==================================================
+10. AUDIT TIMELINE
+==================================================
+
+Every state transition must create an issue event.
+
+Examples:
+
+ISSUE_DETECTED
+ISSUE_ASSIGNED
+ISSUE_ACKNOWLEDGED
+INVESTIGATION_STARTED
+FIX_SUBMITTED
+REVIEW_REQUESTED
+FIX_ACCEPTED
+CHANGES_REQUESTED
+ISSUE_COMPLETED
+
+The timeline must be generated from actual stored events.
+
+Do not hardcode timeline entries.
+
+==================================================
+11. PERMISSIONS
+==================================================
+
+The assigned team can:
+
+Acknowledge
+Investigate
+Submit Fix for Review
+
+The reviewer/product owner/authorized operations user can:
+
+Review Fix
+Accept & Complete
+Request Changes
+
+A team member must NOT be able to mark an issue directly as Completed unless they also have explicit reviewer permission.
+
+==================================================
+12. UX PRINCIPLE
+==================================================
+
+Use this distinction everywhere:
+
+"Ready for review"
+=
+The team says the work is finished.
+
+"Completed"
+=
+An authorized reviewer has verified and accepted the fix.
+
+Never use "Finished" as the final state.
+
+Use:
+
+READY FOR REVIEW
+
+and:
+
+COMPLETED
+
+==================================================
+13. QUALITY REQUIREMENTS
+==================================================
+
+The workflow must work end-to-end.
+
+Test:
+
+1. Issue is created.
+2. Issue is assigned.
+3. Team acknowledges.
+4. Team investigates.
+5. Team submits a fix.
+6. Status changes to Ready for Review.
+7. Reviewer receives notification/in-app alert.
+8. Reviewer opens review screen.
+9. Reviewer verifies evidence.
+10. Reviewer accepts.
+11. Issue becomes Completed.
+12. Timeline records every transition.
+
+Also test:
+
+1. Team submits fix.
+2. Reviewer requests changes.
+3. Reason is saved.
+4. Team receives the reason.
+5. Issue returns to investigation.
+6. Team can submit another fix.
+7. Reviewer can review again.
+
+Do not use fake state changes or hardcoded data.
+
+Make the entire workflow persistent in PostgreSQL and reflected immediately across the dashboard, issue detail page, action center, notifications, and timeline.
+
+The final experience should communicate:
+
+TEAM:
+"We fixed it."
+
+MERCHANT VOICE:
+"Great. Prove it."
+
+REVIEWER:
+"I verified it."
+
+SYSTEM:
+"Now it is completed."
+
+This verification loop is a core product feature and should feel seamless, trustworthy, and production-ready.
+```

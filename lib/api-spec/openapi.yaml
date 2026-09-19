@@ -1,0 +1,742 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Merchant Voice API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: employees
+  - name: dashboard
+  - name: feedback
+  - name: issues
+  - name: actions
+  - name: assistant
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/session:
+    get:
+      operationId: getEmployeeSession
+      tags: [auth]
+      responses:
+        "200":
+          description: Current employee session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeSession"
+  /auth/login:
+    post:
+      operationId: loginEmployee
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeLoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeSession"
+        "401":
+          description: Invalid employee credentials
+        "429":
+          description: Too many sign-in attempts
+  /auth/logout:
+    post:
+      operationId: logoutEmployee
+      tags: [auth]
+      responses:
+        "204":
+          description: Signed out
+  /auth/change-password:
+    post:
+      operationId: changeEmployeePassword
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeInput"
+      responses:
+        "204":
+          description: Password changed and other sessions revoked
+        "400":
+          description: Invalid password
+        "401":
+          description: Current password is incorrect
+  /employees:
+    get:
+      operationId: listEmployees
+      tags: [employees]
+      responses:
+        "200":
+          description: Employees in the administrator's workspace
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ManagedEmployee"
+        "403":
+          description: Administrator access required
+    post:
+      operationId: createEmployee
+      tags: [employees]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeInput"
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedEmployee"
+        "409":
+          description: Employee ID already exists
+  /employees/{id}:
+    patch:
+      operationId: updateEmployeeAccess
+      tags: [employees]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeAccessUpdate"
+      responses:
+        "200":
+          description: Employee access updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedEmployee"
+        "404":
+          description: Employee not found
+  /employees/{id}/reset-password:
+    post:
+      operationId: resetEmployeePassword
+      tags: [employees]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetInput"
+      responses:
+        "204":
+          description: Password reset and active sessions revoked
+        "404":
+          description: Employee not found
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Dashboard decision surface
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /feedback:
+    get:
+      operationId: listFeedback
+      tags: [feedback]
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: Feedback records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Feedback"
+    post:
+      operationId: createFeedback
+      tags: [feedback]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackInput"
+      responses:
+        "201":
+          description: Feedback created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+  /feedback/import:
+    post:
+      operationId: importFeedback
+      tags: [feedback]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackImportInput"
+      responses:
+        "201":
+          description: Feedback imported and analyzed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+  /issues:
+    get:
+      operationId: listIssues
+      tags: [issues]
+      responses:
+        "200":
+          description: Detected issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+  /issues/{id}:
+    get:
+      operationId: getIssue
+      tags: [issues]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Issue decision detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDetail"
+        "404":
+          description: Not found
+  /issues/{id}/advance:
+    post:
+      operationId: advanceIssue
+      tags: [issues]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueAdvanceInput"
+      responses:
+        "200":
+          description: Issue advanced to the next lifecycle state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssueDetail" }
+        "409":
+          description: Invalid lifecycle transition
+  /issues/{id}/fixes:
+    post:
+      operationId: submitIssueFix
+      tags: [issues]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixSubmissionInput" }
+      responses:
+        "201":
+          description: Fix submitted and issue is ready for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FixSubmission" }
+        "409":
+          description: Issue is not ready for a fix submission
+  /issues/{id}/review:
+    post:
+      operationId: reviewIssueFix
+      tags: [issues]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FixReviewInput" }
+      responses:
+        "200":
+          description: Review saved and issue lifecycle updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssueDetail" }
+        "403":
+          description: Reviewer permission required
+        "409":
+          description: Issue is not ready for review
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [issues]
+      responses:
+        "200":
+          description: In-app workflow notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/WorkflowNotification" }
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [issues]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Notification marked read
+  /actions:
+    get:
+      operationId: listActions
+      tags: [actions]
+      responses:
+        "200":
+          description: Operational actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Action"
+    post:
+      operationId: createAction
+      tags: [actions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActionInput"
+      responses:
+        "201":
+          description: Action created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Action"
+  /actions/{id}:
+    patch:
+      operationId: updateAction
+      tags: [actions]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActionUpdate"
+      responses:
+        "200":
+          description: Action updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Action"
+        "404":
+          description: Not found
+  /assistant/query:
+    post:
+      operationId: queryAssistant
+      tags: [assistant]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantQueryInput"
+      responses:
+        "200":
+          description: Grounded answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantAnswer"
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    Employee:
+      type: object
+      required: [id, employeeId, name, role]
+      properties:
+        id: { type: integer }
+        employeeId: { type: string }
+        name: { type: string }
+        role: { type: string }
+    ManagedEmployee:
+      allOf:
+        - $ref: "#/components/schemas/Employee"
+        - type: object
+          required: [active, createdAt]
+          properties:
+            active: { type: boolean }
+            createdAt: { type: string, format: date-time }
+    EmployeeSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated: { type: boolean }
+        employee:
+          oneOf:
+            - $ref: "#/components/schemas/Employee"
+            - type: "null"
+    EmployeeLoginInput:
+      type: object
+      required: [employeeId, password]
+      properties:
+        employeeId:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 8
+          maxLength: 200
+    PasswordChangeInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, minLength: 8, maxLength: 200 }
+        newPassword: { type: string, minLength: 8, maxLength: 200 }
+    EmployeeInput:
+      type: object
+      required: [employeeId, name, role, temporaryPassword]
+      properties:
+        employeeId: { type: string, minLength: 3, maxLength: 50 }
+        name: { type: string, minLength: 2, maxLength: 100 }
+        role: { type: string, enum: [Administrator, Employee] }
+        temporaryPassword: { type: string, minLength: 8, maxLength: 200 }
+    EmployeeAccessUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        active: { type: boolean }
+        role: { type: string, enum: [Administrator, Employee] }
+    PasswordResetInput:
+      type: object
+      required: [temporaryPassword]
+      properties:
+        temporaryPassword: { type: string, minLength: 8, maxLength: 200 }
+    DashboardMetric:
+      type: object
+      required: [label, value, context]
+      properties:
+        label: { type: string }
+        value: { type: integer }
+        context: { type: string }
+    TrendPoint:
+      type: object
+      required: [date, count]
+      properties:
+        date: { type: string }
+        count: { type: integer }
+    Dashboard:
+      type: object
+      required: [metrics, attentionIssues, detectedInsight, recentFeedback, trend, synthetic]
+      properties:
+        metrics:
+          type: array
+          items: { $ref: "#/components/schemas/DashboardMetric" }
+        attentionIssues:
+          type: array
+          items: { $ref: "#/components/schemas/Issue" }
+        detectedInsight: { $ref: "#/components/schemas/Insight" }
+        recentFeedback:
+          type: array
+          items: { $ref: "#/components/schemas/Feedback" }
+        trend:
+          type: array
+          items: { $ref: "#/components/schemas/TrendPoint" }
+        synthetic: { type: boolean }
+    Feedback:
+      type: object
+      required: [id, message, source, category, sentiment, severity, status, createdAt, summary, keywords, synthetic]
+      properties:
+        id: { type: integer }
+        message: { type: string }
+        source: { type: string }
+        category: { type: string }
+        sentiment: { type: string, enum: [Positive, Neutral, Negative] }
+        severity: { type: string, enum: [Low, Medium, High] }
+        status: { type: string, enum: [Analyzed, Processing, Needs review] }
+        createdAt: { type: string, format: date-time }
+        summary: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        issueId: { type: ["integer", "null"] }
+        issueTitle: { type: ["string", "null"] }
+        synthetic: { type: boolean }
+    FeedbackInput:
+      type: object
+      required: [message, source]
+      properties:
+        message: { type: string, minLength: 3, maxLength: 5000 }
+        source: { type: string, minLength: 1, maxLength: 100 }
+        date: { type: string, format: date-time }
+    FeedbackImportRow:
+      type: object
+      required: [message, source]
+      properties:
+        message: { type: string, minLength: 3, maxLength: 5000 }
+        source: { type: string, minLength: 1, maxLength: 100 }
+        date: { type: string, format: date-time }
+    FeedbackImportInput:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: { $ref: "#/components/schemas/FeedbackImportRow" }
+    ImportResult:
+      type: object
+      required: [imported, analyzed, issuesUpdated, message]
+      properties:
+        imported: { type: integer }
+        analyzed: { type: integer }
+        issuesUpdated: { type: integer }
+        message: { type: string }
+    Issue:
+      type: object
+      required: [id, title, summary, reportCount, trendPercent, priority, status, sharePercent, recentCount]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        summary: { type: string }
+        reportCount: { type: integer }
+        trendPercent: { type: number }
+        priority: { type: string, enum: [High, Medium, Low] }
+        status: { type: string, enum: [Detected, Assigned, Acknowledged, Investigating, Ready for Review, Completed, Changes Requested] }
+        assignedTeam:
+          oneOf:
+            - type: string
+            - type: "null"
+        sharePercent: { type: number }
+        recentCount: { type: integer }
+    Insight:
+      type: object
+      required: [title, body, evidenceCount, generatedAt]
+      properties:
+        title: { type: string }
+        body: { type: string }
+        evidenceCount: { type: integer }
+        generatedAt: { type: string, format: date-time }
+    Recommendation:
+      type: object
+      required: [title, description, suggestedOwner, priority]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        suggestedOwner: { type: string }
+        priority: { type: string, enum: [P1, P2, P3] }
+    IssueDetail:
+      allOf:
+        - $ref: "#/components/schemas/Issue"
+        - type: object
+          required: [evidence, trend, interpretation, recommendation, events]
+          properties:
+            evidence:
+              type: array
+              items: { $ref: "#/components/schemas/Feedback" }
+            trend:
+              type: array
+              items: { $ref: "#/components/schemas/TrendPoint" }
+            interpretation: { $ref: "#/components/schemas/Insight" }
+            recommendation: { $ref: "#/components/schemas/Recommendation" }
+            latestFix:
+              oneOf:
+                - $ref: "#/components/schemas/FixSubmission"
+                - type: "null"
+            events:
+              type: array
+              items: { $ref: "#/components/schemas/IssueEvent" }
+            completedAt:
+              oneOf:
+                - type: string
+                  format: date-time
+                - type: "null"
+            completedByName:
+              oneOf:
+                - type: string
+                - type: "null"
+    IssueAdvanceInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [assign, acknowledge, investigate] }
+        assignedTeam: { type: string, minLength: 2, maxLength: 100 }
+    FixSubmissionInput:
+      type: object
+      required: [summary]
+      properties:
+        summary: { type: string, minLength: 3, maxLength: 1000 }
+        resolutionDetails: { type: string, maxLength: 5000 }
+        evidence: { type: string, maxLength: 2000 }
+    FixSubmission:
+      type: object
+      required: [id, issueId, submittedByName, submittedByTeam, summary, status, submittedAt]
+      properties:
+        id: { type: integer }
+        issueId: { type: integer }
+        submittedByName: { type: string }
+        submittedByTeam: { type: string }
+        summary: { type: string }
+        resolutionDetails:
+          oneOf:
+            - type: string
+            - type: "null"
+        evidence:
+          oneOf:
+            - type: string
+            - type: "null"
+        status: { type: string, enum: [Pending Review, Accepted, Changes Requested] }
+        submittedAt: { type: string, format: date-time }
+        reviewedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        reviewedByName:
+          oneOf:
+            - type: string
+            - type: "null"
+        reviewReason:
+          oneOf:
+            - type: string
+            - type: "null"
+        verificationChecklist:
+          type: object
+          additionalProperties: { type: boolean }
+    FixReviewInput:
+      type: object
+      required: [outcome, fixDeployed, behaviorVerified, metricsChecked]
+      properties:
+        outcome: { type: string, enum: [accept, request_changes] }
+        fixDeployed: { type: boolean }
+        behaviorVerified: { type: boolean }
+        metricsChecked: { type: boolean }
+        reason: { type: string, maxLength: 2000 }
+    IssueEvent:
+      type: object
+      required: [id, eventType, actorName, createdAt, details]
+      properties:
+        id: { type: integer }
+        eventType: { type: string, enum: [ISSUE_DETECTED, ISSUE_ASSIGNED, ISSUE_ACKNOWLEDGED, INVESTIGATION_STARTED, FIX_SUBMITTED, REVIEW_REQUESTED, FIX_ACCEPTED, CHANGES_REQUESTED, ISSUE_COMPLETED] }
+        actorName: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+    WorkflowNotification:
+      type: object
+      required: [id, issueId, title, message, read, createdAt]
+      properties:
+        id: { type: integer }
+        issueId: { type: integer }
+        title: { type: string }
+        message: { type: string }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    Action:
+      type: object
+      required: [id, title, description, issueId, issueTitle, priority, owner, status, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        issueId: { type: integer }
+        issueTitle: { type: string }
+        priority: { type: string, enum: [P1, P2, P3] }
+        owner: { type: string }
+        status: { type: string, enum: [Open, In Progress, Resolved] }
+        createdAt: { type: string, format: date-time }
+    ActionInput:
+      type: object
+      required: [title, description, issueId, priority, owner]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 200 }
+        description: { type: string, minLength: 3, maxLength: 2000 }
+        issueId: { type: integer, minimum: 1 }
+        priority: { type: string, enum: [P1, P2, P3] }
+        owner: { type: string, minLength: 2, maxLength: 100 }
+    ActionUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 3, maxLength: 200 }
+        description: { type: string, minLength: 3, maxLength: 2000 }
+        priority: { type: string, enum: [P1, P2, P3] }
+        owner: { type: string, minLength: 2, maxLength: 100 }
+        status: { type: string, enum: [Open, In Progress, Resolved] }
+    AssistantQueryInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 3, maxLength: 1000 }
+    AssistantAnswer:
+      type: object
+      required: [answer, evidence, insufficientData]
+      properties:
+        answer: { type: string }
+        evidence:
+          type: array
+          items: { $ref: "#/components/schemas/Feedback" }
+        insufficientData: { type: boolean }

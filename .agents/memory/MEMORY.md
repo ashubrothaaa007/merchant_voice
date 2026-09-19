@@ -1,0 +1,2 @@
+- [Generated client TypeScript libs](generated-client-typescript-libs.md) — Orval's generated fetch helpers require DOM iterable typings for Headers iteration.
+- [Merchant Voice employee auth](merchant-voice-employee-auth.md) — Keep employee-ID access on first-party sessions; managed email auth does not fit the required identifier.

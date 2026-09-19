@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Merchant Voice"
+description = "A production-minded product operations SaaS that turns merchant feedback into evidence-backed issues, prioritized recommendations, and trackable actions for product and operations teams."
+version = "1.0.0"
+id = "artifacts/merchant-voice"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23838
+
+[services.development]
+run = "pnpm --filter @workspace/merchant-voice run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/merchant-voice", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/merchant-voice/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23838"
+BASE_PATH = "/"
